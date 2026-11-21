@@ -30,17 +30,17 @@
 # Disable directory listing
 Options -Indexes
 
-# Protect sensitive files
-<FilesMatch "\.(php|config|db|sql|env|log)$">
+# Protect sensitive files - EXCLUDE backend PHP files
+<FilesMatch "\.(config|db|sql|env|log)$">
     Order allow,deny
     Deny from all
 </FilesMatch>
 
-# Allow access to specific PHP files
-<FilesMatch "^(index|login|success|stats|config|files)\$">
+# Allow access to all PHP files in backend directory
+<DirectoryMatch "^/backend/">
     Order allow,deny
     Allow from all
-</FilesMatch>
+</DirectoryMatch>
 
 # Compress text files
 <IfModule mod_deflate.c>
