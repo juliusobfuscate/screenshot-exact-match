@@ -34,3 +34,4 @@ use the editor.
 - This app is an educational UI recreation: every page renders `DemoNotice`, and sign-in forms validate only through `src/lib/demo-auth.ts` (synthetic example.com/example.test emails, fixed demo code) with input kept in transient React state — never send, store or log form input, so the prototype cannot collect real credentials.
 - Brand SVGs live in `public/assets/` and are referenced by `/assets/...` paths via `<img>`; the brief mandates these exact files and paths.
 - Non-navigating links use the shared `DemoLink` component so hover/focus/no-navigation behavior stays consistent.
+- The `/settings` admin panel is a simulation: its session, token and edits live only in the in-memory store `src/lib/admin/store.ts` (no localStorage, cookies or server), and statistics come from the deterministic synthetic log in `src/lib/admin/sample-logs.ts` — so the panel can never hold real credentials or track real visitors.

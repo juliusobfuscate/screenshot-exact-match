@@ -11,8 +11,16 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AuthFacebookDemoRouteImport } from './routes/auth/facebook-demo'
 import { Route as AuthGoogleDemoRouteImport } from './routes/auth/google-demo'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsPanelRouteImport } from './routes/settings._panel'
+import { Route as SettingsPanelChangeTokenRouteImport } from './routes/settings._panel.change-token'
+import { Route as SettingsPanelConfigRouteImport } from './routes/settings._panel.config'
+import { Route as SettingsPanelDashboardRouteImport } from './routes/settings._panel.dashboard'
+import { Route as SettingsPanelFilesRouteImport } from './routes/settings._panel.files'
+import { Route as SettingsPanelStatsRouteImport } from './routes/settings._panel.stats'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthFacebookDemoRoute = AuthFacebookDemoRouteImport.update({
@@ -34,37 +47,128 @@ const AuthGoogleDemoRoute = AuthGoogleDemoRouteImport.update({
   path: '/auth/google-demo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsPanelRoute = SettingsPanelRouteImport.update({
+  id: '/_panel',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsPanelChangeTokenRoute =
+  SettingsPanelChangeTokenRouteImport.update({
+    id: '/change-token',
+    path: '/change-token',
+    getParentRoute: () => SettingsPanelRoute,
+  } as any)
+const SettingsPanelConfigRoute = SettingsPanelConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
+  getParentRoute: () => SettingsPanelRoute,
+} as any)
+const SettingsPanelDashboardRoute = SettingsPanelDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => SettingsPanelRoute,
+} as any)
+const SettingsPanelFilesRoute = SettingsPanelFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
+  getParentRoute: () => SettingsPanelRoute,
+} as any)
+const SettingsPanelStatsRoute = SettingsPanelStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => SettingsPanelRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/auth/facebook-demo': typeof AuthFacebookDemoRoute
   '/auth/google-demo': typeof AuthGoogleDemoRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/settings/change-token': typeof SettingsPanelChangeTokenRoute
+  '/settings/config': typeof SettingsPanelConfigRoute
+  '/settings/dashboard': typeof SettingsPanelDashboardRoute
+  '/settings/files': typeof SettingsPanelFilesRoute
+  '/settings/stats': typeof SettingsPanelStatsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/auth/facebook-demo': typeof AuthFacebookDemoRoute
   '/auth/google-demo': typeof AuthGoogleDemoRoute
+  '/settings': typeof SettingsIndexRoute
+  '/settings/change-token': typeof SettingsPanelChangeTokenRoute
+  '/settings/config': typeof SettingsPanelConfigRoute
+  '/settings/dashboard': typeof SettingsPanelDashboardRoute
+  '/settings/files': typeof SettingsPanelFilesRoute
+  '/settings/stats': typeof SettingsPanelStatsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/auth/facebook-demo': typeof AuthFacebookDemoRoute
   '/auth/google-demo': typeof AuthGoogleDemoRoute
+  '/settings/_panel': typeof SettingsPanelRouteWithChildren
+  '/settings/': typeof SettingsIndexRoute
+  '/settings/_panel/change-token': typeof SettingsPanelChangeTokenRoute
+  '/settings/_panel/config': typeof SettingsPanelConfigRoute
+  '/settings/_panel/dashboard': typeof SettingsPanelDashboardRoute
+  '/settings/_panel/files': typeof SettingsPanelFilesRoute
+  '/settings/_panel/stats': typeof SettingsPanelStatsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/auth/facebook-demo' | '/auth/google-demo'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/settings'
+    | '/auth/facebook-demo'
+    | '/auth/google-demo'
+    | '/settings/'
+    | '/settings/change-token'
+    | '/settings/config'
+    | '/settings/dashboard'
+    | '/settings/files'
+    | '/settings/stats'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/auth/facebook-demo' | '/auth/google-demo'
-  id: '__root__' | '/' | '/login' | '/auth/facebook-demo' | '/auth/google-demo'
+  to:
+    | '/'
+    | '/login'
+    | '/auth/facebook-demo'
+    | '/auth/google-demo'
+    | '/settings'
+    | '/settings/change-token'
+    | '/settings/config'
+    | '/settings/dashboard'
+    | '/settings/files'
+    | '/settings/stats'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/settings'
+    | '/auth/facebook-demo'
+    | '/auth/google-demo'
+    | '/settings/_panel'
+    | '/settings/'
+    | '/settings/_panel/change-token'
+    | '/settings/_panel/config'
+    | '/settings/_panel/dashboard'
+    | '/settings/_panel/files'
+    | '/settings/_panel/stats'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  SettingsRoute: typeof SettingsRouteWithChildren
   AuthFacebookDemoRoute: typeof AuthFacebookDemoRoute
   AuthGoogleDemoRoute: typeof AuthGoogleDemoRoute
 }
@@ -85,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/facebook-demo': {
       id: '/auth/facebook-demo'
       path: '/auth/facebook-demo'
@@ -99,12 +210,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGoogleDemoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/_panel': {
+      id: '/settings/_panel'
+      path: ''
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsPanelRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/_panel/change-token': {
+      id: '/settings/_panel/change-token'
+      path: '/change-token'
+      fullPath: '/settings/change-token'
+      preLoaderRoute: typeof SettingsPanelChangeTokenRouteImport
+      parentRoute: typeof SettingsPanelRoute
+    }
+    '/settings/_panel/config': {
+      id: '/settings/_panel/config'
+      path: '/config'
+      fullPath: '/settings/config'
+      preLoaderRoute: typeof SettingsPanelConfigRouteImport
+      parentRoute: typeof SettingsPanelRoute
+    }
+    '/settings/_panel/dashboard': {
+      id: '/settings/_panel/dashboard'
+      path: '/dashboard'
+      fullPath: '/settings/dashboard'
+      preLoaderRoute: typeof SettingsPanelDashboardRouteImport
+      parentRoute: typeof SettingsPanelRoute
+    }
+    '/settings/_panel/files': {
+      id: '/settings/_panel/files'
+      path: '/files'
+      fullPath: '/settings/files'
+      preLoaderRoute: typeof SettingsPanelFilesRouteImport
+      parentRoute: typeof SettingsPanelRoute
+    }
+    '/settings/_panel/stats': {
+      id: '/settings/_panel/stats'
+      path: '/stats'
+      fullPath: '/settings/stats'
+      preLoaderRoute: typeof SettingsPanelStatsRouteImport
+      parentRoute: typeof SettingsPanelRoute
+    }
   }
 }
+
+interface SettingsPanelRouteChildren {
+  SettingsPanelChangeTokenRoute: typeof SettingsPanelChangeTokenRoute
+  SettingsPanelConfigRoute: typeof SettingsPanelConfigRoute
+  SettingsPanelDashboardRoute: typeof SettingsPanelDashboardRoute
+  SettingsPanelFilesRoute: typeof SettingsPanelFilesRoute
+  SettingsPanelStatsRoute: typeof SettingsPanelStatsRoute
+}
+
+const SettingsPanelRouteChildren: SettingsPanelRouteChildren = {
+  SettingsPanelChangeTokenRoute: SettingsPanelChangeTokenRoute,
+  SettingsPanelConfigRoute: SettingsPanelConfigRoute,
+  SettingsPanelDashboardRoute: SettingsPanelDashboardRoute,
+  SettingsPanelFilesRoute: SettingsPanelFilesRoute,
+  SettingsPanelStatsRoute: SettingsPanelStatsRoute,
+}
+
+const SettingsPanelRouteWithChildren = SettingsPanelRoute._addFileChildren(
+  SettingsPanelRouteChildren,
+)
+
+interface SettingsRouteChildren {
+  SettingsPanelRoute: typeof SettingsPanelRouteWithChildren
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsPanelRoute: SettingsPanelRouteWithChildren,
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  SettingsRoute: SettingsRouteWithChildren,
   AuthFacebookDemoRoute: AuthFacebookDemoRoute,
   AuthGoogleDemoRoute: AuthGoogleDemoRoute,
 }

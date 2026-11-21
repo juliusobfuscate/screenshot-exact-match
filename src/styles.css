@@ -117,6 +117,21 @@
   --color-fb-line: var(--fb-line);
   --color-fb-error-bg: var(--fb-error-bg);
   --color-fb-success-bg: var(--fb-success-bg);
+
+  /* Admin settings simulation */
+  --color-adm-primary: var(--adm-primary);
+  --color-adm-primary-dark: var(--adm-primary-dark);
+  --color-adm-night: var(--adm-night);
+  --color-adm-bg: var(--adm-bg);
+  --color-adm-success: var(--adm-success);
+  --color-adm-danger: var(--adm-danger);
+  --color-adm-warning: var(--adm-warning);
+  --color-adm-text: var(--adm-text);
+  --color-adm-text-soft: var(--adm-text-soft);
+  --color-adm-text-faint: var(--adm-text-faint);
+  --color-adm-border: var(--adm-border);
+  --shadow-adm-card: 0 2px 8px oklch(0 0 0 / 0.1);
+  --shadow-adm-focus: 0 0 0 2px oklch(0.618 0.167 250.9 / 0.2);
 }
 
 :root {
@@ -196,6 +211,18 @@
   --fb-line: oklch(0.9 0.004 253.9);
   --fb-error-bg: oklch(0.95 0.03 20);
   --fb-success-bg: oklch(0.95 0.04 150);
+
+  --adm-primary: oklch(0.618 0.167 250.9);
+  --adm-primary-dark: oklch(0.513 0.16 255.7);
+  --adm-night: oklch(0.234 0.056 272.5);
+  --adm-bg: oklch(0.97 0 0);
+  --adm-success: oklch(0.673 0.162 144.2);
+  --adm-danger: oklch(0.631 0.194 29.4);
+  --adm-warning: oklch(0.844 0.172 84.9);
+  --adm-text: oklch(0.321 0 0);
+  --adm-text-soft: oklch(0.51 0 0);
+  --adm-text-faint: oklch(0.683 0 0);
+  --adm-border: oklch(0.907 0 0);
 }
 
 @layer base {
