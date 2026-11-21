@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthFacebookDemoRouteImport } from './routes/auth/facebook-demo'
+import { Route as AuthGoogleDemoRouteImport } from './routes/auth/google-demo'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthFacebookDemoRoute = AuthFacebookDemoRouteImport.update({
+  id: '/auth/facebook-demo',
+  path: '/auth/facebook-demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthGoogleDemoRoute = AuthGoogleDemoRouteImport.update({
+  id: '/auth/google-demo',
+  path: '/auth/google-demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/auth/facebook-demo': typeof AuthFacebookDemoRoute
+  '/auth/google-demo': typeof AuthGoogleDemoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/auth/facebook-demo': typeof AuthFacebookDemoRoute
+  '/auth/google-demo': typeof AuthGoogleDemoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/auth/facebook-demo': typeof AuthFacebookDemoRoute
+  '/auth/google-demo': typeof AuthGoogleDemoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/login' | '/auth/facebook-demo' | '/auth/google-demo'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/login' | '/auth/facebook-demo' | '/auth/google-demo'
+  id: '__root__' | '/' | '/login' | '/auth/facebook-demo' | '/auth/google-demo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  AuthFacebookDemoRoute: typeof AuthFacebookDemoRoute
+  AuthGoogleDemoRoute: typeof AuthGoogleDemoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/facebook-demo': {
+      id: '/auth/facebook-demo'
+      path: '/auth/facebook-demo'
+      fullPath: '/auth/facebook-demo'
+      preLoaderRoute: typeof AuthFacebookDemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/google-demo': {
+      id: '/auth/google-demo'
+      path: '/auth/google-demo'
+      fullPath: '/auth/google-demo'
+      preLoaderRoute: typeof AuthGoogleDemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
+  AuthFacebookDemoRoute: AuthFacebookDemoRoute,
+  AuthGoogleDemoRoute: AuthGoogleDemoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
