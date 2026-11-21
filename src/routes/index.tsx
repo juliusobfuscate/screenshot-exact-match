@@ -64,13 +64,13 @@ function DownloadPage() {
       <DemoNotice />
 
       {/* Header */}
-      <header className="flex h-[51px] items-center justify-between bg-mf-header pr-[10px] pl-[11px] md:px-6">
+      <header className="flex h-[51px] items-center justify-between bg-mf-header pr-[10px] pl-[8px] md:px-6">
         <Link
           to="/login"
           aria-label="MediaFire logo (demo)"
           className={`rounded-sm focus-visible:ring-mf-btn ${press}`}
         >
-          <img src="/assets/mediafire-white.svg" alt="MediaFire" className="h-auto w-[180px] max-w-[46vw]" />
+          <img src="/assets/mediafire-white.svg" alt="MediaFire" className="h-auto w-[185px] max-w-[48vw]" />
         </Link>
         <nav className="flex gap-px">
           <HeaderButton>SIGN UP</HeaderButton>
@@ -122,8 +122,8 @@ function DownloadPage() {
           to="/login"
           className={`flex h-[61px] items-center rounded-[4px] bg-mf-blue pr-[34px] pl-[7px] text-primary-foreground hover:bg-mf-blue-hover focus-visible:ring-mf-blue ${press}`}
         >
-          <ZipFileIcon className="h-[44px] w-[32px] shrink-0" />
-          <span className="ml-[23px] min-w-0 flex-1">
+          <ZipFileIcon className="h-[46px] w-[34px] shrink-0" />
+          <span className="ml-[20px] min-w-0 flex-1">
             <span className="block truncate text-[16px] leading-tight font-medium">
               CINEMA FRL V7 IRUKANDJI...
             </span>
@@ -134,7 +134,7 @@ function DownloadPage() {
           <SolidDownloadIcon className="ml-2 size-[17px] shrink-0" />
         </Link>
 
-        <p className="mt-[26px] px-[5px] text-center text-[11.5px] leading-[1.2] font-light text-mf-text-soft">
+        <p className="mt-[24px] text-center text-[11.4px] leading-[1.25] font-light text-mf-text-soft">
           Clicking the download button above will start your download in a new tab and show a message
           from our advertising partners.
         </p>
@@ -148,9 +148,9 @@ function DownloadPage() {
       </main>
 
       {/* Footer */}
-      <footer className="grow border-t border-mf-line bg-mf-footer px-5 pt-[26px] pb-[25px]">
+      <footer className="grow border-t border-mf-line bg-mf-footer px-5 pt-[21px] pb-[25px]">
         <div className="mx-auto max-w-[600px]">
-          <ul className="flex flex-wrap gap-x-[20px] gap-y-[13px] text-[12.5px] leading-[17px] text-mf-text">
+          <ul className="flex flex-wrap gap-x-[20px] gap-y-[13px] text-[12.2px] leading-[17px] text-mf-text">
             <li>©2026 MediaFire Build 121967</li>
             {footerLinks.map((l) => (
               <li key={l}>
@@ -163,7 +163,7 @@ function DownloadPage() {
               </li>
             ))}
           </ul>
-          <div className="mt-[55px] flex gap-[10px]">
+          <div className="mt-[47px] flex gap-[10px]">
             {[
               { label: "Blog", icon: <span className="text-[17px] font-black">B</span> },
               { label: "Twitter", icon: <BirdGlyph className="size-[17px]" /> },

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { DemoLink } from "@/components/demo/DemoLink";
 import { DemoNotice } from "@/components/demo/DemoNotice";
@@ -49,33 +49,35 @@ function LoginPage() {
   const [keep, setKeep] = useState(true);
   const [result, setResult] = useState<DemoResult | null>(null);
   const [xNotice, setXNotice] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const r = validateMainLogin(email, password);
     setResult(r);
     if (r.ok) setPassword("");
+    else if (r.message !== "Password is required.") emailRef.current?.focus();
   };
 
   return (
     <div className="flex min-h-screen flex-col bg-background font-open">
-      <DemoNotice />
+      <DemoNotice detail={`Demo only: …@example.com / …@example.test · password ${DEMO_CODE}`} />
 
       <main className="mx-auto w-full max-w-[420px] flex-1 px-[30px]">
-        <div className="mt-[48px] flex justify-center">
-          <img src="/assets/mediafire.svg" alt="MediaFire" className="h-auto w-[251px] max-w-full" />
+        <div className="mt-[52px] flex justify-center">
+          <img src="/assets/mediafire.svg" alt="MediaFire" className="h-auto w-[257px] max-w-full" />
         </div>
 
-        <h1 className="mt-[56px] text-center text-[22px] leading-tight font-light text-mf-text">
+        <h1 className="mt-[50px] text-center text-[22px] leading-tight font-light text-mf-text">
           How do you want to log in?
         </h1>
 
-        <form onSubmit={onSubmit} noValidate className="mt-[33px]" autoComplete="off">
+        <form onSubmit={onSubmit} noValidate className="mt-[27px]" autoComplete="off">
           {result && (
             <div
               role={result.ok ? "status" : "alert"}
               className={cn(
-                "mb-[6px] border px-3 py-[5px] text-center text-[13px] leading-snug",
+                "-mx-px mt-[6px] mb-[5px] flex min-h-[27px] items-center justify-center border px-3 py-[3px] text-center text-[12.5px] leading-snug",
                 result.ok
                   ? "border-mf-success-text/30 bg-mf-success-bg text-mf-success-text"
                   : "border-mf-error-border bg-mf-error-bg text-mf-error-text",
@@ -90,6 +92,8 @@ function LoginPage() {
           </label>
           <input
             id="demo-email"
+            ref={emailRef}
+            autoFocus
             type="email"
             inputMode="email"
             autoComplete="off"
@@ -110,12 +114,6 @@ function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className={cn(inputClass, "mt-[5px]")}
           />
-          <p className="mt-[6px] text-[11px] leading-snug text-mf-footer-text">
-            Demo only: use an <span className="font-semibold">@example.com</span> or{" "}
-            <span className="font-semibold">@example.test</span> email and the password{" "}
-            <span className="font-semibold">{DEMO_CODE}</span>.
-          </p>
-
           <div className="mt-[14px] flex items-center justify-between text-[13px]">
             <label className="flex cursor-pointer items-center gap-[9px] text-mf-text">
               <input
@@ -140,7 +138,7 @@ function LoginPage() {
 
           <button
             type="submit"
-            className="mt-[33px] h-[50px] w-full rounded-[3px] bg-mf-blue text-[16px] font-light tracking-[0.02em] text-primary-foreground outline-none transition hover:bg-mf-blue-hover focus-visible:ring-2 focus-visible:ring-mf-blue focus-visible:ring-offset-2 active:scale-[0.99]"
+            className="mt-[33px] h-[50px] w-full rounded-[3px] bg-mf-blue text-[16px] font-normal tracking-[0.02em] text-primary-foreground outline-none transition hover:bg-mf-blue-hover focus-visible:ring-2 focus-visible:ring-mf-blue focus-visible:ring-offset-2 active:scale-[0.99]"
           >
             LOG IN
           </button>
@@ -163,7 +161,7 @@ function LoginPage() {
         </div>
 
         {xNotice && (
-          <div role="status" className="mt-[35px] text-center text-[13.5px] leading-[1.6] text-mf-text">
+          <div role="status" className="mt-[24px] text-center text-[13.2px] leading-[1.62] text-mf-text">
             <p className="font-bold text-mf-ink">X Login has been disabled.</p>
             <p>
               To access a MediaFire account created with X Login, please{" "}
@@ -172,7 +170,7 @@ function LoginPage() {
           </div>
         )}
 
-        <div className="mt-[31px] flex min-h-[56px] items-center justify-center bg-mf-gray px-3 py-3 text-center text-[14.5px] text-mf-text">
+        <div className="mt-[29px] flex min-h-[56px] items-center justify-center bg-mf-gray px-3 py-3 text-center text-[14.5px] text-mf-text">
           <p>
             Don’t have an account?{" "}
             <DemoLink className="text-mf-blue hover:text-mf-blue-hover">Create an account</DemoLink>
