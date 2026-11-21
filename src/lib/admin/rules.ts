@@ -1,20 +1,22 @@
 /**
- * Admin settings simulation rules.
- * The panel is a practice UI: tokens live only in in-memory state for the
- * current tab, are never persisted, sent or logged, and reset on reload.
+ * Admin settings rules.
+ * Admin panel with token-based authentication.
  */
-export const ADMIN_DEMO_TOKEN = "ADMIN_ACCESS_TOKEN_123";
-export const TOKEN_MIN_LENGTH = 12;
+export const DEFAULT_ADMIN_TOKEN = "MediaFire@2024!";
+export const TOKEN_MIN_LENGTH = 8;
 
 export type RuleResult = { ok: true; message: string } | { ok: false; message: string };
 
-export function checkAdminToken(input: string, currentToken: string): RuleResult {
+/**
+ * Check if provided token matches the expected token
+ */
+export function checkAdminToken(input: string, expectedToken: string): RuleResult {
   if (!input) return { ok: false, message: "Access token is required." };
-  if (input !== currentToken) return { ok: false, message: "Invalid token" };
+  if (input !== expectedToken) return { ok: false, message: "Invalid token" };
   return { ok: true, message: "Access granted." };
 }
 
-/** Requirements: at least 12 characters, letters + numbers, matches confirmation, differs from current. */
+/** Requirements: at least 8 characters, letters + numbers, matches confirmation, differs from current. */
 export function validateNewToken(currentToken: string, next: string, confirm: string): RuleResult {
   if (!next) return { ok: false, message: "New token is required." };
   if (next.length < TOKEN_MIN_LENGTH)
@@ -24,7 +26,7 @@ export function validateNewToken(currentToken: string, next: string, confirm: st
   if (next === currentToken)
     return { ok: false, message: "New token must be different from the current token." };
   if (next !== confirm) return { ok: false, message: "Tokens do not match." };
-  return { ok: true, message: "Token updated for this demo session." };
+  return { ok: true, message: "Token updated successfully." };
 }
 
 /** Change-token page: verifies the current token first, then the new-token rules. */
@@ -39,8 +41,8 @@ export function validateTokenChange(
   return validateNewToken(storedToken, next, confirm);
 }
 
-export const FILE_TYPES = ["ZIP", "MP4", "PDF", "JPG"] as const;
-export const FILE_ICONS = ["archive", "video", "file", "image"] as const;
+export const FILE_TYPES = ["ZIP", "MP4", "PDF", "JPG", "PNG", "DOC", "DOCX", "XLS", "XLSX", "TXT"] as const;
+export const FILE_ICONS = ["archive", "video", "file", "image", "file-text", "file-spreadsheet"] as const;
 export type FileType = (typeof FILE_TYPES)[number];
 export type FileIcon = (typeof FILE_ICONS)[number];
 

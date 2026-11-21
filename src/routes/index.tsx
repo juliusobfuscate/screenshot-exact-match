@@ -2,27 +2,26 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Link2, MegaphoneOff, Plus, Share2, TimerOff, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { DemoNotice } from "@/components/demo/DemoNotice";
-import { FilePattern } from "@/components/demo/FilePattern";
+import { FilePattern } from "@/components/FilePattern";
 import {
   BirdGlyph,
   FacebookGlyph,
   SolidDownloadIcon,
   ZipFileIcon,
-} from "@/components/demo/icons";
+} from "@/components/custom-icons";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Download Page — UI Practice Demo" },
+      { title: "MediaFire - Simple. Powerful. Free." },
       {
         name: "description",
-        content: "Educational recreation of a file download page. Not an official website.",
+        content: "MediaFire is a simple to use free cloud storage and file sharing service. Store files, documents, photos, videos and more.",
       },
-      { property: "og:title", content: "Download Page — UI Practice Demo" },
+      { property: "og:title", content: "MediaFire - Simple. Powerful. Free." },
       {
         property: "og:description",
-        content: "Educational recreation of a file download page. Not an official website.",
+        content: "MediaFire is a simple to use free cloud storage and file sharing service. Store files, documents, photos, videos and more.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -61,13 +60,12 @@ const footerLinks = ["Advertising", "Terms", "Privacy Policy", "Copyright", "Abu
 function DownloadPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans">
-      <DemoNotice />
 
       {/* Header */}
       <header className="flex h-[51px] items-center justify-between bg-mf-header pr-[10px] pl-[8px] md:px-6">
         <Link
           to="/login"
-          aria-label="MediaFire logo (demo)"
+          aria-label="MediaFire logo"
           className={`rounded-sm focus-visible:ring-mf-btn ${press}`}
         >
           <img src="/assets/mediafire-white.svg" alt="MediaFire" className="h-auto w-[185px] max-w-[48vw]" />

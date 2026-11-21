@@ -1,6 +1,6 @@
-/** Shared head() metadata for the admin simulation pages. */
+/** Shared head() metadata for the admin pages. */
 export function adminMeta(title: string, description: string) {
-  const full = `${title} — Admin Panel Simulation`;
+  const full = `${title} - MediaFire Admin`;
   return {
     meta: [
       { title: full },

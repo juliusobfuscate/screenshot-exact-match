@@ -2,40 +2,76 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
-import { DemoNotice } from "@/components/demo/DemoNotice";
 import { AdminButton, AdminInput } from "@/components/settings/ui";
 import { adminMeta } from "@/lib/admin/meta";
-import { ADMIN_DEMO_TOKEN, checkAdminToken } from "@/lib/admin/rules";
-import { adminActions, getAdminState } from "@/lib/admin/store";
+import { DEFAULT_ADMIN_TOKEN } from "@/lib/admin/rules";
 
 export const Route = createFileRoute("/settings/")({
   head: () =>
-    adminMeta("Admin Access", "Practice admin sign-in screen that only accepts the demo access token."),
+    adminMeta("Admin Access", "Enter your access token to access the MediaFire admin panel."),
   component: AdminLogin,
 });
 
 function AdminLogin() {
-  // Transient state only — the token is compared in memory and never stored.
   const [token, setToken] = useState("");
+  const [email, setEmail] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const r = checkAdminToken(token, getAdminState().token);
-    if (!r.ok) {
-      setError(r.message);
+    
+    if (!token.trim()) {
+      setError("Token is required");
       return;
     }
-    setToken("");
-    adminActions.login();
-    void navigate({ to: "/settings/dashboard" });
+
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token.trim(),
+          email: email.trim()
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Save token to localStorage
+        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('adminEmail', data.admin_email);
+        
+        // Redirect to admin dashboard
+        navigate({ to: "/settings/panel" });
+      } else {
+        setError(data.message || "Invalid token or email");
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="flex min-h-screen flex-col bg-adm-night font-sans">
-      <DemoNotice detail={`Admin panel simulation · demo token: ${ADMIN_DEMO_TOKEN}`} />
       <main className="flex flex-1 flex-col items-center justify-center px-5 py-10">
         <img src="/assets/mediafire-white.svg" alt="MediaFire" className="h-auto w-[220px] max-w-[70vw]" />
 
@@ -80,18 +116,33 @@ function AdminLogin() {
               {show ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
             </button>
           </div>
+
+          <label htmlFor="admin-email" className="mt-4 block text-[14px] font-medium text-adm-text">
+            Admin Email
+          </label>
+          <div className="relative mt-[6px]">
+            <AdminInput
+              id="admin-email"
+              type="email"
+              value={email}
+              placeholder="Enter admin email"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
+              className={error ? "border-adm-danger focus:border-adm-danger" : ""}
+            />
+          </div>
+
           {error && (
             <p id="token-error" role="alert" className="mt-2 text-[13px] text-adm-danger">
               {error}
             </p>
           )}
 
-          <AdminButton type="submit" className="mt-6 sm:w-full">
-            Login
+          <AdminButton type="submit" className="mt-6 sm:w-full" disabled={isLoading}>
+            {isLoading ? "Logging in..." : "Login"}
           </AdminButton>
-          <p className="mt-4 text-center text-[12px] text-adm-text-faint">
-            Practice interface — the session ends when you reload the page.
-          </p>
         </form>
       </main>
     </div>

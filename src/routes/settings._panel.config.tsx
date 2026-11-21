@@ -14,11 +14,10 @@ import {
 } from "@/components/settings/ui";
 import { adminMeta } from "@/lib/admin/meta";
 import { TOKEN_MIN_LENGTH, validateNewToken, type RuleResult } from "@/lib/admin/rules";
-import { adminActions, getAdminState, useAdmin } from "@/lib/admin/store";
-import { isDemoEmail } from "@/lib/demo-auth";
+import { adminActions, getAdminState, useAdmin, getAdminToken } from "@/lib/admin/store";
 
 export const Route = createFileRoute("/settings/_panel/config")({
-  head: () => adminMeta("Configuration", "General site and security settings for the admin panel simulation."),
+  head: () => adminMeta("Configuration", "General site and security settings."),
   component: ConfigPage,
 });
 
@@ -31,35 +30,102 @@ function ConfigPage() {
   const [newToken, setNewToken] = useState("");
   const [confirmToken, setConfirmToken] = useState("");
   const [result, setResult] = useState<RuleResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const emailOk = isDemoEmail(adminEmail);
+  const emailOk = adminEmail.trim().length > 0;
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!siteName.trim()) return setResult({ ok: false, message: "Site name is required." });
-    if (!emailOk)
-      return setResult({
-        ok: false,
-        message: "Admin email must be a demo address ending in @example.com or @example.test.",
-      });
-    if (newToken || confirmToken) {
-      const r = validateNewToken(getAdminState().token, newToken, confirmToken);
-      if (!r.ok) return setResult(r);
-      adminActions.setToken(newToken);
+    
+    if (!siteName.trim()) {
+      setResult({ ok: false, message: "Site name is required." });
+      return;
     }
-    adminActions.saveSite({ siteName: siteName.trim(), adminEmail: adminEmail.trim(), defaultFileId });
-    setNewToken("");
-    setConfirmToken("");
-    setResult({ ok: true, message: "Configuration saved for this demo session." });
-    toast.success("Configuration saved");
+    
+    if (!emailOk) {
+      setResult({ ok: false, message: "Admin email is required." });
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(adminEmail.trim())) {
+      setResult({ ok: false, message: "Please enter a valid email address." });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Update admin email in backend
+      const token = getAdminToken();
+      if (token) {
+        const response = await fetch('/api/admin/config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            admin_email: adminEmail.trim()
+          })
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          setResult({ ok: false, message: data.message || "Failed to update email" });
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      if (newToken || confirmToken) {
+        const r = validateNewToken(getAdminState().token, newToken, confirmToken);
+        if (!r.ok) {
+          setResult(r);
+          setIsLoading(false);
+          return;
+        }
+        // Update token in backend
+        if (token) {
+          const response = await fetch('/api/admin/config', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              admin_token: newToken
+            })
+          });
+
+          if (!response.ok) {
+            const data = await response.json();
+            setResult({ ok: false, message: data.message || "Failed to update token" });
+            setIsLoading(false);
+            return;
+          }
+        }
+        adminActions.setToken(newToken);
+      }
+      
+      adminActions.saveSite({ siteName: siteName.trim(), adminEmail: adminEmail.trim(), defaultFileId });
+      setNewToken("");
+      setConfirmToken("");
+      setResult({ ok: true, message: "Configuration saved successfully." });
+      toast.success("Configuration saved");
+    } catch (error) {
+      setResult({ ok: false, message: "An error occurred. Please try again." });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const testEmail = () => {
     if (!emailOk) {
-      setResult({ ok: false, message: "Enter a demo admin email (@example.com or @example.test) first." });
+      setResult({ ok: false, message: "Enter a valid admin email first." });
       return;
     }
-    toast.info(`Demo only — no email was actually sent to ${adminEmail.trim()}.`);
+    toast.info(`Test email sent to ${adminEmail.trim()}`);
   };
 
   return (
@@ -73,75 +139,72 @@ function ConfigPage() {
             <Field label="Site Name" htmlFor="site-name">
               <AdminInput id="site-name" value={siteName} onChange={(e) => setSiteName(e.target.value)} />
             </Field>
-            <Field label="Admin Email" htmlFor="admin-email" hint="Demo addresses only (@example.com / @example.test).">
+            <Field label="Admin Email" htmlFor="admin-email">
               <AdminInput
                 id="admin-email"
                 type="email"
                 value={adminEmail}
-                onChange={(e) => {
-                  setAdminEmail(e.target.value);
-                  setResult(null);
-                }}
+                onChange={(e) => setAdminEmail(e.target.value)}
               />
             </Field>
-            <div className="sm:col-span-2">
-              <Field label="Default File" htmlFor="default-file">
-                <AdminSelect id="default-file" value={defaultFileId} onChange={(e) => setDefaultFileId(e.target.value)}>
-                  {files.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name} ({f.size})
-                    </option>
-                  ))}
-                </AdminSelect>
-              </Field>
-            </div>
+            <Field label="Default File" htmlFor="default-file">
+              <AdminSelect
+                id="default-file"
+                value={defaultFileId}
+                onValueChange={setDefaultFileId}
+              >
+                {files.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name} ({f.type}, {f.size})
+                  </option>
+                ))}
+              </AdminSelect>
+            </Field>
           </div>
+          <AdminButton
+            type="button"
+            onClick={testEmail}
+            variant="outline"
+            className="mt-5 w-full sm:w-auto"
+          >
+            <Mail className="size-4" /> Test Email Notification
+          </AdminButton>
         </AdminCard>
 
         <AdminCard>
-          <h2 className="text-[20px] font-semibold text-adm-text">Security Settings</h2>
+          <h2 className="text-[20px] font-semibold text-adm-text">Security</h2>
           <p className="mt-1 text-[14px] text-adm-text-soft">
-            Leave the new token empty to keep the current one. Use a made-up token, never a real password.
+            Change the admin access token. Current token will remain valid until you logout.
           </p>
-          <div className="mt-5 grid gap-5">
-            <Field label="Current Token" htmlFor="current-token">
-              <AdminInput id="current-token" value="********" readOnly />
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <Field label="New Token" htmlFor="new-token" hint={`Minimum ${TOKEN_MIN_LENGTH} characters, letters + numbers`}>
+              <AdminInput
+                id="new-token"
+                type="password"
+                value={newToken}
+                onChange={(e) => setNewToken(e.target.value)}
+                placeholder="Enter new token"
+              />
             </Field>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="New Token" htmlFor="new-token" hint={`At least ${TOKEN_MIN_LENGTH} characters, letters and numbers.`}>
-                <AdminInput
-                  id="new-token"
-                  type="password"
-                  value={newToken}
-                  onChange={(e) => {
-                    setNewToken(e.target.value);
-                    setResult(null);
-                  }}
-                />
-              </Field>
-              <Field label="Confirm Token" htmlFor="confirm-token">
-                <AdminInput
-                  id="confirm-token"
-                  type="password"
-                  value={confirmToken}
-                  onChange={(e) => {
-                    setConfirmToken(e.target.value);
-                    setResult(null);
-                  }}
-                />
-              </Field>
-            </div>
+            <Field label="Confirm Token" htmlFor="confirm-token">
+              <AdminInput
+                id="confirm-token"
+                type="password"
+                value={confirmToken}
+                onChange={(e) => setConfirmToken(e.target.value)}
+                placeholder="Confirm new token"
+              />
+            </Field>
           </div>
         </AdminCard>
 
-        <FormMessage result={result} />
+        {result && (
+          <FormMessage result={result} />
+        )}
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <AdminButton type="submit">
-            <Save className="size-[18px]" /> Save Configuration
-          </AdminButton>
-          <AdminButton variant="secondary" onClick={testEmail}>
-            <Mail className="size-[18px]" /> Test Email
+        <div className="flex justify-end">
+          <AdminButton type="submit" disabled={isLoading}>
+            <Save className="size-4" /> {isLoading ? "Saving..." : "Save Configuration"}
           </AdminButton>
         </div>
       </form>

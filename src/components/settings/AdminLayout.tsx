@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
-import { DemoNotice } from "@/components/demo/DemoNotice";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,21 +21,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { adminActions } from "@/lib/admin/store";
+import { logout as adminLogout, getAdminEmail } from "@/lib/admin/store";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { to: "/settings/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/settings/files", label: "File Display", icon: FolderOpen },
-  { to: "/settings/config", label: "Configuration", icon: Settings },
-  { to: "/settings/stats", label: "Statistics", icon: TrendingUp },
-  { to: "/settings/change-token", label: "Change Token", icon: KeyRound },
+  { to: "/settings/panel", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/settings/panel/files", label: "File Display", icon: FolderOpen },
+  { to: "/settings/panel/config", label: "Configuration", icon: Settings },
+  { to: "/settings/panel/stats", label: "Statistics", icon: TrendingUp },
+  { to: "/settings/panel/change-token", label: "Change Token", icon: KeyRound },
 ] as const;
 
 function useLogout() {
   const navigate = useNavigate();
   return () => {
-    adminActions.logout();
+    adminLogout();
     void navigate({ to: "/settings" });
   };
 }
@@ -49,7 +48,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav aria-label="Admin" className="flex flex-col gap-1 p-3">
       {NAV.map(({ to, label, icon: Icon }) => {
-        const active = path === to;
+        const active = path.startsWith(to);
         return (
           <Link
             key={to}
@@ -87,10 +86,10 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 export function AdminLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const logout = useLogout();
+  const adminEmail = getAdminEmail();
 
   return (
     <div className="flex min-h-screen flex-col bg-adm-bg font-sans">
-      <DemoNotice detail="Admin panel simulation · sample data only · nothing is saved after you reload" />
 
       <header className="sticky top-0 z-30 flex h-[56px] items-center gap-3 bg-adm-night px-3 text-primary-foreground md:px-5">
         <button
@@ -108,12 +107,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         <DropdownMenu>
           <DropdownMenuTrigger className="ml-auto flex h-[40px] items-center gap-2 rounded-[4px] px-2 text-[14px] outline-none hover:bg-primary-foreground/10 focus-visible:shadow-adm-focus">
             <UserCircle2 className="size-[24px]" />
-            <span className="hidden sm:inline">Admin</span>
+            <span className="hidden sm:inline">{adminEmail || "Admin"}</span>
             <ChevronDown className="size-[16px] opacity-70" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[180px]">
             <DropdownMenuLabel className="text-[12px] font-normal text-adm-text-soft">
-              Demo administrator
+              {adminEmail || "Administrator"}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={logout} className="text-adm-danger focus:text-adm-danger">

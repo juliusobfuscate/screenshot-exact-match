@@ -1,11 +1,9 @@
 import { useSyncExternalStore } from "react";
 
-import { ADMIN_DEMO_TOKEN, type FileDraft, type FileItem } from "./rules";
+import { DEFAULT_ADMIN_TOKEN, type FileDraft, type FileItem } from "./rules";
 
 /**
- * In-memory state for the admin settings simulation.
- * Nothing is written to localStorage, cookies or a server: reloading the tab
- * signs out and restores the defaults. Only mutated from browser event handlers.
+ * Admin state management with backend API integration.
  */
 export interface SiteSettings {
   siteName: string;
@@ -29,9 +27,9 @@ const initialFiles: FileItem[] = [
 function initialState(): AdminState {
   return {
     isAuthenticated: false,
-    token: ADMIN_DEMO_TOKEN,
+    token: DEFAULT_ADMIN_TOKEN,
     files: initialFiles,
-    site: { siteName: "MediaFire", adminEmail: "admin@example.com", defaultFileId: "f1" },
+    site: { siteName: "MediaFire", adminEmail: "admin@mediafire.com", defaultFileId: "f1" },
   };
 }
 
@@ -62,12 +60,46 @@ export function useAdmin<T>(select: (s: AdminState) => T): T {
   );
 }
 
+/**
+ * Check if user is authenticated (has token in localStorage)
+ */
+export function checkAuth(): boolean {
+  const token = localStorage.getItem('adminToken');
+  if (!token) return false;
+  return true;
+}
+
+/**
+ * Get admin token from localStorage
+ */
+export function getAdminToken(): string | null {
+  return localStorage.getItem('adminToken');
+}
+
+/**
+ * Get admin email from localStorage
+ */
+export function getAdminEmail(): string | null {
+  return localStorage.getItem('adminEmail');
+}
+
+/**
+ * Logout - clear token from localStorage
+ */
+export function logout() {
+  localStorage.removeItem('adminToken');
+  localStorage.removeItem('adminEmail');
+  set({ isAuthenticated: false, token: '' });
+}
+
 export const adminActions = {
-  login() {
-    set({ isAuthenticated: true });
+  login(token: string, email: string) {
+    localStorage.setItem('adminToken', token);
+    localStorage.setItem('adminEmail', email);
+    set({ isAuthenticated: true, token });
   },
   logout() {
-    set({ isAuthenticated: false });
+    logout();
   },
   setToken(token: string) {
     set({ token });

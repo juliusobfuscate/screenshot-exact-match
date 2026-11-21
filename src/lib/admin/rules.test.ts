@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  ADMIN_DEMO_TOKEN,
+  DEFAULT_ADMIN_TOKEN,
   checkAdminToken,
   validateFileDraft,
   validateNewToken,
@@ -10,11 +10,11 @@ import {
 import { filterLogs, getSampleLogs, rangeBounds } from "./sample-logs";
 
 describe("admin access token", () => {
-  it("accepts the default demo token ADMIN_ACCESS_TOKEN_123", () => {
-    expect(checkAdminToken("ADMIN_ACCESS_TOKEN_123", ADMIN_DEMO_TOKEN).ok).toBe(true);
+  it("accepts the default admin token", () => {
+    expect(checkAdminToken(DEFAULT_ADMIN_TOKEN, DEFAULT_ADMIN_TOKEN).ok).toBe(true);
   });
   it("rejects any other token with 'Invalid token'", () => {
-    expect(checkAdminToken("admin_access_token_123", ADMIN_DEMO_TOKEN)).toEqual({
+    expect(checkAdminToken("wrong_token", DEFAULT_ADMIN_TOKEN)).toEqual({
       ok: false,
       message: "Invalid token",
     });
@@ -22,23 +22,23 @@ describe("admin access token", () => {
 });
 
 describe("new token requirements", () => {
-  it("requires at least 12 characters", () => {
-    expect(validateNewToken(ADMIN_DEMO_TOKEN, "abc12345678", "abc12345678").ok).toBe(false);
-    expect(validateNewToken(ADMIN_DEMO_TOKEN, "abc123456789", "abc123456789").ok).toBe(true);
+  it("requires at least 8 characters", () => {
+    expect(validateNewToken(DEFAULT_ADMIN_TOKEN, "abc1234", "abc1234").ok).toBe(false);
+    expect(validateNewToken(DEFAULT_ADMIN_TOKEN, "abc12345", "abc12345").ok).toBe(true);
   });
   it("requires both letters and numbers", () => {
-    expect(validateNewToken(ADMIN_DEMO_TOKEN, "abcdefghijkl", "abcdefghijkl").ok).toBe(false);
-    expect(validateNewToken(ADMIN_DEMO_TOKEN, "123456789012", "123456789012").ok).toBe(false);
+    expect(validateNewToken(DEFAULT_ADMIN_TOKEN, "abcdefgh", "abcdefgh").ok).toBe(false);
+    expect(validateNewToken(DEFAULT_ADMIN_TOKEN, "12345678", "12345678").ok).toBe(false);
   });
   it("must differ from the current token", () => {
-    expect(validateNewToken(ADMIN_DEMO_TOKEN, ADMIN_DEMO_TOKEN, ADMIN_DEMO_TOKEN).ok).toBe(false);
+    expect(validateNewToken(DEFAULT_ADMIN_TOKEN, DEFAULT_ADMIN_TOKEN, DEFAULT_ADMIN_TOKEN).ok).toBe(false);
   });
   it("must match the confirmation", () => {
-    expect(validateNewToken(ADMIN_DEMO_TOKEN, "abc123456789", "abc123456780").ok).toBe(false);
+    expect(validateNewToken(DEFAULT_ADMIN_TOKEN, "abc12345", "abc12346").ok).toBe(false);
   });
   it("change-token page verifies the current token first", () => {
-    expect(validateTokenChange(ADMIN_DEMO_TOKEN, "wrong", "abc123456789", "abc123456789").ok).toBe(false);
-    expect(validateTokenChange(ADMIN_DEMO_TOKEN, ADMIN_DEMO_TOKEN, "abc123456789", "abc123456789").ok).toBe(true);
+    expect(validateTokenChange(DEFAULT_ADMIN_TOKEN, "wrong", "abc12345", "abc12345").ok).toBe(false);
+    expect(validateTokenChange(DEFAULT_ADMIN_TOKEN, DEFAULT_ADMIN_TOKEN, "abc12345", "abc12345").ok).toBe(true);
   });
 });
 
